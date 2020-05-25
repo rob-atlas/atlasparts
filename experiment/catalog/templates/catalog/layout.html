@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% load static %}
+  <link rel="stylesheet" type="text/css" href="{% static 'catalog/css/bulma.css' %}" />
+  <link rel="shortcut icon" href="{% static 'catalog/img/favicon.png' %}">
+  <style type="text/css">
+    img {
+        padding: 5px;
+        border: 1px solid #ccc;
+    }
+  </style>
+  <title>{{ title }}</title>
+</head>
+
+<body>
+  <section class="hero is-fullheight is-default is-bold">
+
+    <div class="hero-head">
+      <nav class="navbar">
+        <div class="container">
+          <div class="navbar-brand">
+            <!--For mobiles, the 3 bar menu -->
+            <span class="navbar-burger burger" data-target="navbarMenu">
+              <span></span>
+              <span></span>
+              <span></span>
+
+            </span>
+          </div>
+          <div id="navbarMenu" class="navbar-menu">
+            <div class="navbar-end">
+              <div class="tabs is-right">
+                <ul>
+                  <li class="is-active"><a href="/">Atlas Parts</a></li>
+                  <li><a href="{% url 'about' %}">About</a></li>
+                  <li><a href="{% url 'contact' %}">Contact</a></li>
+{% if user.is_authenticated %}
+                  <li class="has-text-link">Hello {{ user.username }}!</li>
+{% endif %}
+                </ul>
+                <div class="navbar-item">
+{% if user.is_authenticated %}
+                  <form id="logoutForm" action="/logout" method="post">
+                    {% csrf_token %}
+                    <a href="{% url 'logout' %}" class="button is-inverted is-focused">
+                      <strong>Log off</strong>
+                    </a>
+                  </form>
+{% else %}
+                  <a href="{% url 'login' %}" class="button is-inverted is-focused">
+                    <strong>Log in</strong>
+                  </a>
+                  <!--{ % include 'catalog/loginpartial.html' % }-->
+{% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="hero-body">
+{% block content %}{% endblock %}
+    </div>
+
+    <div class="hero-foot">
+      <div class="container">
+        <p>&copy; {{ year }} - <a href="https://www.atlasgaming.com.au/">Atlas Gaming</a></p>
+      </div>
+    </div>
+
+  </section>
+{% block scripts %}{% endblock %}
+
+</body>
+</html>
