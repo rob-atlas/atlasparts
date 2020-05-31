@@ -1,0 +1,69 @@
+{% extends "catalog/layout_02.html" %}
+
+{% block content %}
+<style type="text/css">
+  tr[data-href] {cursor: pointer;}
+  thead tr {background-color: #ffdd57;}
+  tbody tr:hover {font-weight: bold;}
+  tbody tr:last-of-type {border-bottom: 2px solid #ffdd57;}
+  table {box-shadow: 0 0 20px rgba(0,0,0,0.15);}
+</style>
+<section class="section">
+  {% csrf_token %}
+  <table class="table is-bordered is-striped is-narrow">
+    <thead>
+      <tr>
+        <th><abbr title="Sales Order">Order</abbr></th>
+        <th>Customer</th>
+        <th><abbr title="Jurisdiction">Where</abbr></th>
+        <th><abbr title="Order Date">Date</abbr></th>
+        <th><abbr title="Likely Installation Date">Install</abbr></th>
+        <th><abbr title="Quantity">QTY</abbr></th>
+        <th>Model</th>
+        <th><abbr title="Games List">Games</abbr></th>
+        <th>Comments</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sale in orders %}
+      <tr data-href="{{ sale.order_number }}">
+        <td>{{ sale.order_number }}</td>
+        <td>{{ sale.customer_name }}</td>
+        <td>{{ sale.jurisdiction }}</td>
+        <td>{{ sale.order_date }}</td>
+        <td>{{ sale.install_date }}</td>
+        <td>
+          {% if sale.quantity == '0' %}
+            {{ sale.games_list|length }}
+          {% else %}
+            {{ sale.quantity }}
+          {% endif %}
+        </td>
+        <td>
+          {% if sale.model == None %}Game Conversion
+          {% else %} {{ sale.model }} {% endif %}
+        </td>
+        <td>
+          {% for game in sale.games_list %}
+          {{ game }}</br>
+          {% endfor %}
+        </td>
+        <td>{{ sale.comments|linebreaks }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const rows = document.querySelectorAll("tr[data-href]");
+      rows.forEach(row => {
+        row.addEventListener("click", () => {
+          window.location.href = row.dataset.href;
+        });
+      });
+    });
+  </script>
+
+</section>
+{% endblock %}
