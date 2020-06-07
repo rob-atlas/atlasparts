@@ -4,13 +4,14 @@
 <style type="text/css">
   tr[data-href] {cursor: pointer;}
   thead tr {background-color: #ffdd57;}
-  tbody tr:hover {font-weight: bold;}
+  tbody tr:nth-of-type(even) {background-color: #f3f3f3;}
+  tbody tr:hover {background-color: #ffeea9;}
   tbody tr:last-of-type {border-bottom: 2px solid #ffdd57;}
   table {box-shadow: 0 0 20px rgba(0,0,0,0.15);}
 </style>
 <section class="section">
   {% csrf_token %}
-  <table class="table is-bordered is-striped is-narrow">
+  <table class="table is-bordered is-narrow">
     <thead>
       <tr>
         <th><abbr title="Sales Order">Order</abbr></th>
