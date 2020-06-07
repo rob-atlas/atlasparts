@@ -22,9 +22,30 @@ class Product(models.Model):
 
 class GameName(models.Model):
     name = models.CharField(max_length=100)
+    # Rob: I think I should make a relationship here between the game name
+    #      and the Unleashed Product Code. For now (June 2, 2020 it's commented)
+    # product_code = models.CharField(max_length=15, null=True)
 
     def __str__(self):
         return self.name
+
+
+class UnleashedProductCode(models.Model):
+    """ Unique product codes as found in the Unleashed Inventory Management
+        System in use at Atlas.
+        It basically is a lookup system, find the product code and retrieve its
+        description.
+        Most common use case is when converting product codes to human readable
+        information e.g. GAME001NSW refers to the game La Faraona for NSW
+        As the description in Unleashed is often not clear or very terse, we
+        are re-generating them here. Not really the right way but only way to
+        make things clearer for the user.
+    """
+    code = models.CharField(max_length=15, null=False)
+    description = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.code
 
 
 class Jurisdiction(models.Model):
