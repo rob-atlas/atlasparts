@@ -131,7 +131,8 @@ def extract_wanted_info(data):
 
     for item in data['Items']:
         order_number = item['OrderNumber'][7:]
-        # retrieve Sales order info either locally or from item
+
+        # retrieve Sales order info either locally or from json stream
         order = get_sales_order_info(order_number, item)
 
         model = None
@@ -179,11 +180,6 @@ def get_sales_order_info(order, data):
         
         either way it will return the values needed
     """
-    # Go and check to see if this order number already exists
-    # in our database?
-    # First implementation of seeing if orders exist in the local db
-    #   stored_orders = UnleashedSalesOrder.objects.filter(order__contains=order_number)
-    #   if stored_orders.exists():
     try:
         sales_order = UnleashedSalesOrder.objects.get(order__exact=order)
     except MultipleObjectsReturned:
@@ -220,12 +216,15 @@ def get_sales_order_info(order, data):
         sales_order.save()
 
         for line_item in data['SalesOrderLines']:
-            item = UnleashedLineItem(
-                code=line_item['Product']['ProductCode'],
-                qty=int(line_item['OrderQuantity']),
-                description=line_item['Product']['ProductDescription']
+            product_code = line_item['Product']['ProductCode']
+            quantity = int(line_item['OrderQuantity'])
+            description = line_item['Product']['ProductDescription']
+
+            item, created = UnleashedLineItem.objects.get_or_create(
+                code=product_code,
+                qty=quantity,
+                description=description,
                 )
-            item.save()
             sales_order.line_item.add(item)
 
     return sales_order
