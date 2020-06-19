@@ -55,10 +55,14 @@ class Jurisdiction(models.Model):
                            exists, eg Casino which is separate from State
     """
     name = models.CharField(max_length=100)
-    sub_jurisdiction = models.CharField(max_length=100)
-    acronym = models.CharField(max_length=6)
+    description = models.CharField(max_length=100)
+    code = models.CharField(max_length=6)
+
+    class Meta:
+        ordering = ['code']
 
     def __str__(self):
-        return self.name
+        """ String shown in the admin site of the object """
+        return f"{self.code} {self.description}"
 
 

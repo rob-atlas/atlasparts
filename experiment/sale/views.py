@@ -5,26 +5,14 @@ from datetime import date
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.views import generic
 
 from .unleashed.auth import UnleashedAuth
 
 # ROB: not sure if that is how it is done but I want to
 #      look up the Unleashed product code and get the game name back
-from catalog.models import UnleashedProductCode
+from catalog.models import UnleashedProductCode, Jurisdiction
 from .models import UnleashedSalesOrder, UnleashedLineItem
-
-all_ptms = {
-    '26-273': 'IGT Nextgen with TFT',
-    '26-275': 'Standard blank panel',
-    '26-276': 'IGT Nextgen',
-    '26-277': 'IGT iDisplay',
-    '26-278': 'Aristocrat Prime',
-    '26-279': 'Konami',
-    '26-280': 'Aristocrat Dacom 5000',
-    '26-281': 'Aristocrat Dacom 6000',
-    '26-297': 'Bally with TFT',
-    '26-298': 'Bally',
-}
 
 # Create your views here.
 def index(request):
@@ -34,7 +22,11 @@ def index(request):
     else:
         info = get_unleashed_data()
         if isinstance(info, str):
-            return HttpResponse(info)
+            # An error occurred
+            context = { 'data': info }
+            template = 'sale/sale.html'
+            return render(request, template, context)
+
         sales = extract_wanted_info(info)
         context = { 'orders': sales }
         template = 'sale/index.html'
@@ -85,15 +77,11 @@ def get_unleashed_data():
     if r.status_code == requests.codes.ok:
         data = r.json()
     else:
-        data = "Unable to get information from unleashed\n" + \
-               "Returned error code: " + str(r.status_code)
-    """
-    # Temporarily write the result to a file
-    if r.status_code == requests.codes.ok :
-        with open("SalesOrders.json", 'w') as fd:
-            # json.dump(r.json()['Pagination'], fd)
-            json.dump(r.json(), fd)
-    """
+        data = "Unable to get information from Unleashed" \
+               + "\nReturned error code: " + str(r.status_code) \
+               + "(" + requests.status_codes._codes[r.status_code][0] \
+               + ")\nMost likely a connection timeout"
+
     return data
 
 
@@ -132,7 +120,7 @@ def extract_wanted_info(data):
     for item in data['Items']:
         order_number = item['OrderNumber'][7:]
 
-        # retrieve Sales order info either locally or from json stream
+        # retrieve Sales order info either locally or from item
         order = get_sales_order_info(order_number, item)
 
         model = None
@@ -154,7 +142,7 @@ def extract_wanted_info(data):
             elif product.code[:3] == 'CRT':
                 model = 'CRT'
 
-        # We don't want to list products that start with CRT
+        # Only list products that don't start with CRT
         if (model != 'CRT'):
             row = {
                 'order_number':  order_number,
@@ -196,7 +184,12 @@ def get_sales_order_info(order, data):
         sales_order.save()
     except ObjectDoesNotExist:
         customer = data['Customer']['CustomerName']
-        jurisdiction = data['DeliveryRegion']
+        street = data['DeliveryStreetAddress']
+        town = data['DeliveryCity']
+        if town is None:
+            town = data['DeliverySuburb']
+        deliverystate = data['DeliveryRegion']
+        pcode = data['DeliveryPostCode']
         comments = data['Comments']
         unleasheddate_str = data['OrderDate'][6:-2]
         unleasheddate_int = int(unleasheddate_str[:10])
@@ -205,26 +198,89 @@ def get_sales_order_info(order, data):
         unleasheddate_int = int(unleasheddate_str[:10])
         reqd_date = date.fromtimestamp(unleasheddate_int).strftime('%d %b %Y')
 
+        deliveryname = data['DeliveryName']
+        if deliveryname == None:
+            deliveryname = customer
+
+        customer_ref = data['CustomerRef']
+
+        egm = None
+        for line_item in data['SalesOrderLines']:
+            if line_item['Product']['ProductCode'][:3] == 'EGM':
+                egm = line_item['Product']
+                break
+
+        if deliverystate == None and town == None and egm['ProductCode'] != None:
+            deliverystate = egm['ProductCode'][5:8]
+        jur = get_jurisdiction(deliverystate, deliveryname, town, egm)
+
         # Create an Unleashed Sales Order
         sales_order = UnleashedSalesOrder(
             order=order,
             venue=customer,
-            jurisdiction=jurisdiction,
+            address=street,
+            town=town,
+            state=deliverystate,
+            postcode=pcode,
+            jurisdiction=jur,
             order_date=order_date,
             install_date=reqd_date,
-            comment=comments,)
+            comment=comments,
+            customer_reference=customer_ref,
+            delivery_name=deliveryname,
+            )
         sales_order.save()
 
+        # add each line item to the sales order
         for line_item in data['SalesOrderLines']:
-            product_code = line_item['Product']['ProductCode']
-            quantity = int(line_item['OrderQuantity'])
-            description = line_item['Product']['ProductDescription']
-
-            item, created = UnleashedLineItem.objects.get_or_create(
-                code=product_code,
-                qty=quantity,
-                description=description,
+            item = UnleashedLineItem(
+                code=line_item['Product']['ProductCode'],
+                qty=int(line_item['OrderQuantity']),
+                description=line_item['Product']['ProductDescription']
                 )
+            item.save()
             sales_order.line_item.add(item)
 
     return sales_order
+
+def get_jurisdiction(state, delivery, city, machine):
+    """ Function tries to decipher what jurisdiction the sales order
+        belongs to
+        attributes:
+            state = if known what state the venue is located in eg Victoria
+            delivery = where the product needs to be shipped to likely
+            city = location of the suburb/city
+            machine_number = if a machine is being ordered we can work out
+    """
+    jur = "ROB"
+    if machine:
+        p_code, created = UnleashedProductCode.objects.get_or_create(
+            code=machine['ProductCode'],
+            defaults={'description': machine['ProductDescription']},
+        )
+        if created == False:
+            jur = p_code.code[5:8]
+        else:
+            jur = "Need more look ups"
+    elif state:
+        # We know the state but not which jurisdiction specifically
+        # Let's do a lookup
+        try:
+            query = Jurisdiction.objects.filter(name__startswith=state)[0]
+            jur = query.name
+            import pdb; pdb.set_trace()
+        except:
+            query = "NSW-ROB"
+            jur = state
+    elif delivery:
+        jur = delivery
+    elif city:
+        jur = delivery
+    else:
+        jur = "Unknown"
+
+    return jur
+
+
+class UnleashedSalesOrderView(generic.DetailView):
+    model = UnleashedSalesOrder
