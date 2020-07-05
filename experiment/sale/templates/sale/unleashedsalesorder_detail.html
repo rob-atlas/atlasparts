@@ -1,0 +1,157 @@
+{% extends "catalog/layout_02.html" %}
+
+{% block content %}
+<style type="text/css">
+  thead tr {background-color: #ffdd57;}
+  table {box-shadow: 0 0 20px rgba(0,0,0,0.15);}
+</style>
+
+<div class="container fluid notification">
+  <p class="title">{{ unleashedsalesorder.venue }}</p>
+  <p class="subtitle">Sales Order: {{ unleashedsalesorder.order }}</p>
+</div>
+
+<!-- Dates section -->
+<section class="container fluid ">
+  <div class="field is-grouped is-grouped-multiline">
+    <div class="control">
+      <div class="tags has-addons">
+        <span class="tag is-dark is-medium">Order Date:</span>
+        <span class="tag is-primary is-medium">{{ unleashedsalesorder.order_date }}</span>
+      </div>
+    </div>
+
+    <div class="control">
+      <div class="tags has-addons">
+        <span class="tag is-dark is-medium">Jurisdiction:</span>
+        <span class="tag is-success is-medium">{{ unleashedsalesorder.jurisdiction }}</span>
+      </div>
+    </div>
+
+    <div class="control">
+      <div class="tags has-addons">
+        <span class="tag is-dark is-medium">Install Date:</span>
+        <span class="tag is-warning is-medium">{{ unleashedsalesorder.install_date }}</span>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- End Dates section -->
+
+<!-- line items and comments -->
+<div class="container">
+  <div class="tile is-ancestor">
+
+    <div class="tile is-parent is-vertical">
+      <div class="is-child">
+
+        <section class="container">
+          <table class="table is-bordered is-narrow is-striped">
+            <thead>
+              <tr>
+                <th>Part #:</th>
+                <th>Qty:</th>
+                <th style="width: 500px;">Description:</th>
+              </tr>
+            </thead>
+            <tbody>
+          {% for item in unleashedsalesorder.line_item.all %}
+              <tr>
+                <td>{{ item.code }}</td>
+                <td>{{ item.qty }}</td>
+                <td>{{ item.description }}</td>
+              </tr>
+          {% endfor %}
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+
+    <div class="tile is-parent is-vertical">
+      <div class="is-child">
+        <article class="message is-info">
+          <div class="message-header">
+            <p>Comments:</p>
+          </div>
+          <div class="message-body">
+            {{ unleashedsalesorder.comment|linebreaks  }}
+          </div>
+        </article>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- End line items and comments -->
+
+<!-- middle section listing all specific details of order -->
+<div class="container">
+  <hr>
+  
+  <hr>
+</div>
+<!-- end of middle section -->
+
+<!-- Address section -->
+<div class="container fluid ">
+  <div class="tile is-ancestor">
+
+    <div class="tile is-vertical is-parent">
+      <article class="tile is-child box">
+        <p class="title">Venue Address</p>
+
+        <div class="field is-horizontal">
+          <div class="field-label"><label class="label">Address:</label></div>
+          <div class="field-body">{{ unleashedsalesorder.address }}</div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label"><label class="label">Town:</label></div>
+          <div class="field-body">{{ unleashedsalesorder.town }}</div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label"><label class="label">State:</label></div>
+          <div class="field-body">{{ unleashedsalesorder.state }}</div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label"><label class="label">Postcode:</label></div>
+          <div class="field-body">{{ unleashedsalesorder.postcode }}</div>
+        </div>
+      </article>
+    </div>
+
+    <div class="tile is-parent">
+      <div class="tile is-child box">
+
+        <article>
+          <p class="title">Shipping Address</p>
+
+          <div class="field is-horizontal">
+            <div class="field-label"><label class="label">Company:</label></div>
+            <div class="field-body">
+              <div class="field is-narrow">
+                <div class="control">
+                  <div class="select is-fullwidth">
+                    <select>
+                      <option>{{ unleashedsalesorder.delivery_name }}
+                      <option>Max SA</option>
+                      <option>TGS Vic</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- End Address section -->
+
+{% endblock %}

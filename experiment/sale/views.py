@@ -173,7 +173,7 @@ def get_sales_order_info(order, data):
     except MultipleObjectsReturned:
         # We have more than one sales order with the same number
         # This should never be possible. Every sales order is unique
-        print("[ERROR] sale/views.py: 202; Multiple sales order with the same number")
+        print("[ERROR] sale/views.py: ; Multiple sales order with the same number")
         sales_order = UnleashedSalesOrder(
             order=0,
             venue="Invalid",
@@ -243,6 +243,7 @@ def get_sales_order_info(order, data):
 
     return sales_order
 
+
 def get_jurisdiction(state, delivery, city, machine):
     """ Function tries to decipher what jurisdiction the sales order
         belongs to
@@ -268,7 +269,6 @@ def get_jurisdiction(state, delivery, city, machine):
         try:
             query = Jurisdiction.objects.filter(name__startswith=state)[0]
             jur = query.name
-            import pdb; pdb.set_trace()
         except:
             query = "NSW-ROB"
             jur = state
@@ -283,4 +283,6 @@ def get_jurisdiction(state, delivery, city, machine):
 
 
 class UnleashedSalesOrderView(generic.DetailView):
+    # The next line is not really needed as it is done automagically
+    template_name = 'sale/unleashedsalesorder_detail.html'
     model = UnleashedSalesOrder
